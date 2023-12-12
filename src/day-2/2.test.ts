@@ -9,6 +9,7 @@ type GameLimits = {
 }
 type Game = GameLimits & {
   id: number
+  power: number
 }
 
 // 'Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green'
@@ -19,6 +20,7 @@ const toGame = (line: string): Game => {
     blue: 0,
     green: 0,
     red: 0,
+    power: 0,
   }
 
   roundsStr
@@ -37,9 +39,11 @@ const toGame = (line: string): Game => {
           }
 
           const validColour = colour as ValidColour
-          game[validColour] = Math.max(game[validColour], parseInt(count))
+          game[validColour] = Math.max(game[validColour], countInt)
         })
     })
+
+  game.power = game.red * game.blue * game.green
 
   return game
 }
@@ -48,7 +52,7 @@ const gameValidator = (limits: GameLimits) => (game: Game) =>
   game.blue <= limits.blue &&
   game.green <= limits.green
 
-const solve = (fileName: string, limits: GameLimits) => {
+const getPossibleGames = (fileName: string, limits: GameLimits) => {
   const isPossible = gameValidator(limits)
 
   const games = readFileSync(join(__dirname, fileName), 'utf-8')
@@ -81,7 +85,7 @@ describe('day 2.1', () => {
     })
 
     it('solves test 2.1', () => {
-      const result = solve(FILENAME, LIMITS)
+      const result = getPossibleGames(FILENAME, LIMITS)
 
       const answer = result.reduce((tot, g) => tot + g.id, 0)
 
@@ -98,7 +102,7 @@ describe('day 2.1', () => {
       blue: 14,
     }
 
-    const result = solve(FILENAME, LIMITS)
+    const result = getPossibleGames(FILENAME, LIMITS)
     const answer = result.reduce((tot, g) => tot + g.id, 0)
 
     console.log({
@@ -106,5 +110,40 @@ describe('day 2.1', () => {
     })
 
     expect(answer).toBeGreaterThan(0)
+  })
+})
+
+const fileToGames = (fileName: string) =>
+  readFileSync(join(__dirname, fileName), 'utf-8')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => !!l)
+    .map((l) => toGame(l))
+
+describe('day 2.2', () => {
+  describe('test 2.2', () => {
+    const FILENAME = '2.1-test-data.txt'
+
+    it('calculates game power correctly', () => {
+      const games = fileToGames(FILENAME)
+
+      expect(games).toHaveLength(5)
+
+      const powers = games.map((g) => g.power)
+      expect(powers).toEqual([48, 12, 1560, 630, 36])
+    })
+  })
+
+  describe('question 2.2', () => {
+    const FILENAME = '2-data.txt'
+
+    const games = fileToGames(FILENAME)
+
+    const answer2 = games.reduce((tot, g) => tot + g.power, 0)
+
+    console.log({
+      answer2,
+    })
+    expect(answer2).toBeGreaterThan(0)
   })
 })
