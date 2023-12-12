@@ -49,15 +49,21 @@ const parseGrid = (grid: string[][]) => {
     const lineStr = line.join('')
     const lineNumbers = lineToNumbers(lineStr)
 
+    // if a number appears twice in one line
+    // make sure to not repeat the same index for the same number
+    let prevOffset = 0
     lineNumbers.forEach((n) => {
-      const xOffset = lineStr.indexOf(n)
+      let xOffset = lineStr.substring(prevOffset).indexOf(n)
       if (xOffset === -1) {
-        throw new Error(`failed to find number "${n}" in line "${lineStr}"`)
+        throw new Error(
+          `failed to find number "${n}" in line "${lineStr}" prevOffset:${prevOffset}`
+        )
       }
+      xOffset += prevOffset
+      prevOffset = xOffset
 
       const neighboursSet = new Set<string>()
       const ownCoordsSet = new Set<string>()
-
       n.split('').forEach((_, xIdx) => {
         const coord = {
           x: xIdx + xOffset,
@@ -194,7 +200,6 @@ describe('day 3.1', () => {
     it(`can createGrid ${FILENAME} 140x140`, () => {
       const grid = toGrid(FILENAME)
 
-      console.log(grid.length, grid[0].length)
       expect(grid.length).toBe(grid[0].length)
     })
 
@@ -215,7 +220,7 @@ describe('day 3.1', () => {
 
       let duplicates = false
 
-      grid.forEach((line) => {
+      grid.forEach((line, y) => {
         const lineStr = line.join('')
         const lineNumbers = lineToNumbers(lineStr)
 
@@ -226,6 +231,30 @@ describe('day 3.1', () => {
       })
 
       expect(duplicates).toBe(true)
+    })
+
+    it('has unique numbers by coords', () => {
+      const partNumbers = getPartNumbers(FILENAME)
+
+      const unique = new Set()
+      partNumbers.forEach((n) => {
+        const key = n.ownCoords.join(',')
+        unique.add(key)
+      })
+
+      expect(partNumbers.length).toBe(unique.size)
+    })
+
+    it('has unique numbers by neighbours', () => {
+      const partNumbers = getPartNumbers(FILENAME)
+
+      const unique = new Set()
+      partNumbers.forEach((n) => {
+        const key = n.neighbours.join(',')
+        unique.add(key)
+      })
+
+      expect(partNumbers.length).toBe(unique.size)
     })
 
     it('solves question 3.1', () => {
@@ -239,7 +268,8 @@ describe('day 3.1', () => {
         answer1,
       })
       expect(answer1).toBeGreaterThan(0)
-      expect(answer1).toBeLessThan(532718)
+      expect(answer1).toBeLessThan(532718) // fixed .indexOf()
+      expect(answer1).toBeGreaterThan(532300) // still wrong
     })
   })
 })
