@@ -42,7 +42,7 @@ const parseGrid = (grid: string[][]) => {
   grid.forEach((line, y) => {
     line.forEach((char, x) => {
       if (isSymbol(char)) {
-        symbolCoords.add(`${y}x${x}`)
+        symbolCoords.add(coordToString({ x, y }))
       }
     })
 
@@ -255,6 +255,23 @@ describe('day 3.1', () => {
       })
 
       expect(partNumbers.length).toBe(unique.size)
+    })
+
+    it('no symbol has invalid coord', () => {
+      const grid = toGrid(FILENAME)
+
+      const results = parseGrid(grid)
+
+      const invalid: string[] = []
+      results.symbolCoords.forEach((c) => {
+        const ints = c.split('x').map((c) => parseInt(c))
+        const invalidValue = ints.find((v) => v < 0 || v >= 140)
+        if (invalidValue) {
+          invalid.push(c)
+        }
+      })
+
+      expect(invalid).toHaveLength(0)
     })
 
     it('solves question 3.1', () => {
