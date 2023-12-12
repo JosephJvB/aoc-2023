@@ -25,47 +25,15 @@ const coordToString = (c: Coord) => [c.y, c.x].join('x')
 const lineToNumbers = (line: string) => line.match(/\d+/g)
 const getNeighbours = ({ x, y }: Coord): string[] =>
   [
-    {
-      // top left
-      x: x - 1,
-      y: y - 1,
-    },
-    {
-      // top middle
-      x: x,
-      y: y - 1,
-    },
-    {
-      // top right
-      x: x + 1,
-      y: y - 1,
-    },
-    {
-      // middle right
-      x: x + 1,
-      y: y,
-    },
-    {
-      // bottom right
-      x: x + 1,
-      y: y + 1,
-    },
-    {
-      // bottom middle
-      x: x,
-      y: y + 1,
-    },
-    {
-      // bottom left
-      x: x - 1,
-      y: y + 1,
-    },
-    {
-      // middle left
-      x: x - 1,
-      y: y,
-    },
-  ].map((c) => coordToString(c))
+    [y - 1, x - 1], // top left
+    [y - 1, x], // top middle
+    [y - 1, x + 1], // top right
+    [y, x - 1], // middle left
+    [y, x + 1], // middle right
+    [y + 1, x + 1], // bottom right
+    [y + 1, x], // bottom middle
+    [y + 1, x - 1], // bottom left
+  ].map((c) => c.join('x'))
 const extractNumbers = (grid: string[][]): GridNumber[] => {
   const gridNumbers: GridNumber[] = []
 
@@ -82,19 +50,21 @@ const extractNumbers = (grid: string[][]): GridNumber[] => {
         throw new Error(`failed to find number "${n}" in line "${lineStr}"`)
       }
 
-      const neighbours: string[] = []
-      const ownCoords: string[] = []
+      const neighboursSet = new Set<string>()
+      const ownCoordsSet = new Set<string>()
 
       n.split('').forEach((_, xIdx) => {
         const x = xIdx + xOffset
-        ownCoords.push(coordToString({ x, y }))
-        neighbours.push(...getNeighbours({ x, y }))
+
+        ownCoordsSet.add(coordToString({ x, y }))
+
+        getNeighbours({ x, y }).forEach((c) => neighboursSet.add(c))
       })
 
       gridNumbers.push({
         value: parseInt(n),
-        ownCoords,
-        neighbours,
+        ownCoords: [...ownCoordsSet],
+        neighbours: [...neighboursSet].filter((n) => !ownCoordsSet.has(n)),
       })
     })
   })
@@ -173,7 +143,7 @@ describe('day 3.1', () => {
       expect(unique.has('1x3')).toBe(false)
     })
 
-    it('extractNumbers', () => {
+    it('extractNumbers from grid', () => {
       const input = toGrid(FILENAME)
 
       const result = extractNumbers(input)
@@ -228,6 +198,10 @@ describe('day 3.1', () => {
       const partNumbers = getPartNumbers(FILENAME)
 
       const result = partNumbers.map((n) => n.value)
+
+      console.log({
+        result: result.length,
+      })
 
       const answer1 = result.reduce((tot, n) => tot + n, 0)
       console.log({
