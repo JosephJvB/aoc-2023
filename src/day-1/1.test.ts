@@ -29,7 +29,7 @@ describe('day 1.1', () => {
   })
 
   describe('question 1.1', () => {
-    const FILENAME = '1.1-data.txt'
+    const FILENAME = '1-data.txt'
     it('can solve d1q1', () => {
       const result = processLines1(FILENAME)
 
@@ -195,7 +195,7 @@ describe('day 1.2', () => {
   })
 
   describe('question 1.2', () => {
-    const FILENAME = '1.1-data.txt'
+    const FILENAME = '1-data.txt'
     it('solves 1.2', () => {
       const result = processLines2(FILENAME)
 
