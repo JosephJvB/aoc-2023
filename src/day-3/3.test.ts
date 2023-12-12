@@ -22,7 +22,7 @@ const isSymbol = (char: string) => {
   return isNaN(parseInt(char)) && char !== '.'
 }
 const coordToString = (c: Coord) => [c.y, c.x].join('x')
-const lineToNumbers = (line: string) => line.match(/\d+/g)
+const lineToNumbers = (line: string) => line.match(/\d+/g) ?? []
 const getNeighbours = ({ x, y }: Coord): string[] =>
   [
     [y - 1, x - 1], // top left
@@ -34,15 +34,20 @@ const getNeighbours = ({ x, y }: Coord): string[] =>
     [y + 1, x], // bottom middle
     [y + 1, x - 1], // bottom left
   ].map((c) => c.join('x'))
-const extractNumbers = (grid: string[][]): GridNumber[] => {
+
+const parseGrid = (grid: string[][]) => {
   const gridNumbers: GridNumber[] = []
+  const symbolCoords = new Set<string>()
 
   grid.forEach((line, y) => {
+    line.forEach((char, x) => {
+      if (isSymbol(char)) {
+        symbolCoords.add(`${y}x${x}`)
+      }
+    })
+
     const lineStr = line.join('')
     const lineNumbers = lineToNumbers(lineStr)
-    if (!lineNumbers) {
-      return
-    }
 
     lineNumbers.forEach((n) => {
       const xOffset = lineStr.indexOf(n)
@@ -54,11 +59,14 @@ const extractNumbers = (grid: string[][]): GridNumber[] => {
       const ownCoordsSet = new Set<string>()
 
       n.split('').forEach((_, xIdx) => {
-        const x = xIdx + xOffset
+        const coord = {
+          x: xIdx + xOffset,
+          y,
+        }
 
-        ownCoordsSet.add(coordToString({ x, y }))
+        ownCoordsSet.add(coordToString(coord))
 
-        getNeighbours({ x, y }).forEach((c) => neighboursSet.add(c))
+        getNeighbours(coord).forEach((c) => neighboursSet.add(c))
       })
 
       gridNumbers.push({
@@ -69,22 +77,16 @@ const extractNumbers = (grid: string[][]): GridNumber[] => {
     })
   })
 
-  return gridNumbers
+  return {
+    gridNumbers,
+    symbolCoords,
+  }
 }
 
 const getPartNumbers = (fileName: string) => {
   const grid = toGrid(fileName)
 
-  const gridNumbers = extractNumbers(grid)
-
-  const symbolCoords = new Set<string>()
-  grid.forEach((line, y) => {
-    line.forEach((c, x) => {
-      if (isSymbol(c)) {
-        symbolCoords.add(`${y}x${x}`)
-      }
-    })
-  })
+  const { gridNumbers, symbolCoords } = parseGrid(grid)
 
   return gridNumbers.filter((n) =>
     n.neighbours.find((n) => symbolCoords.has(n))
@@ -94,7 +96,7 @@ const getPartNumbers = (fileName: string) => {
 describe('day 3.1', () => {
   describe('test 3.1', () => {
     const FILENAME = '3.1-test-data.txt'
-    it('toGrid', () => {
+    it('toGrid 10x10', () => {
       const result = toGrid(FILENAME)
 
       expect(result).toHaveLength(10)
@@ -143,36 +145,31 @@ describe('day 3.1', () => {
       expect(unique.has('1x3')).toBe(false)
     })
 
-    it('extractNumbers from grid', () => {
+    it('parseGrid', () => {
       const input = toGrid(FILENAME)
 
-      const result = extractNumbers(input)
+      const result = parseGrid(input)
 
-      expect(result).toHaveLength(10)
+      expect(result.gridNumbers).toHaveLength(10)
+      expect(result.symbolCoords.size).toBe(6)
 
-      const values = result.map((n) => n.value)
+      const values = result.gridNumbers.map((n) => n.value)
       const expected = [467, 114, 35, 633, 617, 58, 592, 755, 664, 598]
       expected.sort()
       values.sort()
       expect(values).toEqual(expected)
 
-      // writeFileSync(
-      //   join(__dirname, '3.1-gridNumbers.json'),
-      //   JSON.stringify(result, null, 2)
-      // )
-
-      // const symbolCoords = new Set<string>()
-      // input.forEach((line, y) => {
-      //   line.forEach((c, x) => {
-      //     if (isSymbol(c)) {
-      //       symbolCoords.add(`${y}x${x}`)
-      //     }
-      //   })
-      // })
-      // writeFileSync(
-      //   join(__dirname, '3.1-symbols.json'),
-      //   JSON.stringify([...symbolCoords], null, 2)
-      // )
+      writeFileSync(
+        join(__dirname, '3.1-parsedGrid.json'),
+        JSON.stringify(
+          {
+            gridNumbers: result.gridNumbers,
+            symbolCoords: [...result.symbolCoords],
+          },
+          null,
+          2
+        )
+      )
     })
 
     it('solves test 3.1', () => {
@@ -194,17 +191,51 @@ describe('day 3.1', () => {
 
   describe('question 3.1', () => {
     const FILENAME = '3.1-data.txt'
+    it(`can createGrid ${FILENAME} 140x140`, () => {
+      const grid = toGrid(FILENAME)
+
+      console.log(grid.length, grid[0].length)
+      expect(grid.length).toBe(grid[0].length)
+    })
+
+    it(`can parseGrid ${FILENAME} line1`, () => {
+      const grid = toGrid(FILENAME)
+
+      const mockGrid = [grid[0]]
+
+      const parsed = parseGrid(mockGrid)
+      expect(parsed.gridNumbers).toHaveLength(7)
+      const values = parsed.gridNumbers.map((n) => n.value)
+      expect(values).toEqual([937, 309, 191, 745, 913, 256, 891])
+      expect(parsed.symbolCoords.size).toBe(0)
+    })
+
+    it('has duplicated numbers in the grid lines', () => {
+      const grid = toGrid(FILENAME)
+
+      let duplicates = false
+
+      grid.forEach((line) => {
+        const lineStr = line.join('')
+        const lineNumbers = lineToNumbers(lineStr)
+
+        const unique = new Set(lineNumbers)
+        if (unique.size < lineNumbers.length) {
+          duplicates = true
+        }
+      })
+
+      expect(duplicates).toBe(true)
+    })
+
     it('solves question 3.1', () => {
       const partNumbers = getPartNumbers(FILENAME)
 
       const result = partNumbers.map((n) => n.value)
 
-      console.log({
-        result: result.length,
-      })
-
       const answer1 = result.reduce((tot, n) => tot + n, 0)
       console.log({
+        numPartNumbers: result.length,
         answer1,
       })
       expect(answer1).toBeGreaterThan(0)
