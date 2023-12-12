@@ -60,7 +60,7 @@ const parseGrid = (grid: string[][]) => {
         )
       }
       xOffset += prevOffset
-      prevOffset = xOffset
+      prevOffset = xOffset + n.toString().length
 
       const neighboursSet = new Set<string>()
       const ownCoordsSet = new Set<string>()
@@ -127,6 +127,31 @@ describe('day 3.1', () => {
       expect(result).toEqual(['617', '123'])
     })
 
+    it('lineToNumbers returns no negatives', () => {
+      const gridNumbers = toGrid(FILENAME).flatMap((l) =>
+        lineToNumbers(l.join(''))
+      )
+
+      const negativeNumber = gridNumbers.find((n) => parseInt(n) < 0)
+      expect(negativeNumber).toBeUndefined()
+    })
+
+    it('lineToNumbers handles arithmetic correctly', () => {
+      const input = '10-617....34+123...5*5..5^2.'
+
+      const result = lineToNumbers(input)
+
+      expect(result).toEqual(['10', '617', '34', '123', '5', '5', '5', '2'])
+    })
+
+    it('lineToNumbers handles end of line', () => {
+      const input = '.123..123'
+
+      const result = lineToNumbers(input)
+
+      expect(result).toEqual(['123', '123'])
+    })
+
     it('getNeighbours', () => {
       const input = { x: -1, y: 1000 }
 
@@ -134,7 +159,7 @@ describe('day 3.1', () => {
 
       expect(result).toHaveLength(8)
 
-      const unique = new Set(result.map((n) => JSON.stringify(n)))
+      const unique = new Set(result)
       expect(unique.size).toBe(8)
     })
 
@@ -165,17 +190,17 @@ describe('day 3.1', () => {
       values.sort()
       expect(values).toEqual(expected)
 
-      writeFileSync(
-        join(__dirname, '3.1-parsedGrid.json'),
-        JSON.stringify(
-          {
-            gridNumbers: result.gridNumbers,
-            symbolCoords: [...result.symbolCoords],
-          },
-          null,
-          2
-        )
-      )
+      // writeFileSync(
+      //   join(__dirname, '3.1-parsedGrid.json'),
+      //   JSON.stringify(
+      //     {
+      //       gridNumbers: result.gridNumbers,
+      //       symbolCoords: [...result.symbolCoords],
+      //     },
+      //     null,
+      //     2
+      //   )
+      // )
     })
 
     it('solves test 3.1', () => {
@@ -272,6 +297,24 @@ describe('day 3.1', () => {
       })
 
       expect(invalid).toHaveLength(0)
+    })
+
+    it('every number has unique coordinates', () => {
+      const partNumbers = getPartNumbers(FILENAME)
+
+      const numCoords = partNumbers.reduce(
+        (tot, n) => tot + n.ownCoords.length,
+        0
+      )
+
+      const unique = new Set<string>()
+      partNumbers.forEach((n) => {
+        n.ownCoords.forEach((c) => {
+          unique.add(c)
+        })
+      })
+
+      expect(unique.size).toBe(numCoords)
     })
 
     it('solves question 3.1', () => {
