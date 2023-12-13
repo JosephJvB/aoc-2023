@@ -10,6 +10,10 @@ type GridNumber = {
   ownCoords: string[]
   neighbours: string[]
 }
+type Gear = {
+  coord: string
+  numbers: [GridNumber, GridNumber]
+}
 
 const toGrid = (fileName: string) =>
   readFileSync(join(__dirname, fileName), 'utf8')
@@ -330,6 +334,141 @@ describe('day 3.1', () => {
       expect(answer1).toBeGreaterThan(0)
       expect(answer1).toBeLessThan(532718) // fixed .indexOf()
       expect(answer1).toBeGreaterThan(532300) // still wrong
+    })
+  })
+})
+
+const parseGearGrid = (grid: string[][]) => {
+  const gridNumbers: GridNumber[] = []
+  const gearCoords = new Set<string>()
+
+  grid.forEach((line, y) => {
+    line.forEach((char, x) => {
+      if (char === '*') {
+        gearCoords.add(coordToString({ x, y }))
+      }
+    })
+
+    const lineStr = line.join('')
+    const lineNumbers = lineToNumbers(lineStr)
+
+    // if a number appears twice in one line
+    // make sure to not repeat the same index for the same number
+    let prevOffset = 0
+    lineNumbers.forEach((n) => {
+      let xOffset = lineStr.substring(prevOffset).indexOf(n)
+      if (xOffset === -1) {
+        throw new Error(
+          `failed to find number "${n}" in line "${lineStr}" prevOffset:${prevOffset}`
+        )
+      }
+      xOffset += prevOffset
+      prevOffset = xOffset + n.toString().length
+
+      const neighboursSet = new Set<string>()
+      const ownCoordsSet = new Set<string>()
+      n.split('').forEach((_, xIdx) => {
+        const coord = {
+          x: xIdx + xOffset,
+          y,
+        }
+
+        ownCoordsSet.add(coordToString(coord))
+
+        getNeighbours(coord).forEach((c) => neighboursSet.add(c))
+      })
+
+      gridNumbers.push({
+        value: parseInt(n),
+        ownCoords: [...ownCoordsSet],
+        neighbours: [...neighboursSet].filter((n) => !ownCoordsSet.has(n)),
+      })
+    })
+  })
+
+  return {
+    gridNumbers,
+    gearCoords,
+  }
+}
+
+const getGearNumbers = (fileName: string) => {
+  const grid = toGrid(fileName)
+
+  const parsed = parseGearGrid(grid)
+
+  const gearMap = new Map<string, GridNumber[]>()
+  parsed.gridNumbers.forEach((gn) => {
+    gn.neighbours.forEach((c) => {
+      if (!parsed.gearCoords.has(c)) {
+        return
+      }
+
+      const soFar = gearMap.get(c) ?? []
+      gearMap.set(c, [...soFar, gn])
+    })
+  })
+
+  const gears: Gear[] = []
+  gearMap.forEach((numbers, coord) => {
+    if (numbers.length === 2) {
+      gears.push({
+        coord,
+        numbers: numbers as [GridNumber, GridNumber],
+      })
+    }
+  })
+
+  return gears
+}
+
+const calcGearRatioTotal = (gears: Gear[]) =>
+  gears.reduce((tot, g) => tot + g.numbers[0].value * g.numbers[1].value, 0)
+
+describe('day 3.2', () => {
+  describe('test 3.2', () => {
+    const FILENAME = '3.1-test-data.txt'
+
+    it('can detect just star chars', () => {
+      const grid = toGrid(FILENAME)
+
+      const parsed = parseGearGrid(grid)
+
+      expect(parsed.gearCoords.size).toBe(3)
+      expect(parsed.gridNumbers.length).toBe(10)
+    })
+
+    it('can get gears and associated numbers', () => {
+      const gears = getGearNumbers(FILENAME)
+
+      expect(gears.length).toBe(2)
+      const numbers = gears.flatMap((g) => g.numbers.map((n) => n.value))
+      numbers.sort()
+      expect(numbers.length).toBe(4)
+      expect(numbers).toEqual([35, 467, 598, 755])
+    })
+
+    it('can calc gear ratios', () => {
+      const gears = getGearNumbers(FILENAME)
+
+      const ratioTotal = calcGearRatioTotal(gears)
+
+      expect(ratioTotal).toBe(467835)
+    })
+  })
+
+  describe('question 3.2', () => {
+    const FILENAME = '3.1-data.txt'
+    it('can solve 3.2', () => {
+      const gears = getGearNumbers(FILENAME)
+
+      const ratioTotal = calcGearRatioTotal(gears)
+
+      console.log({
+        answer2: ratioTotal,
+      })
+
+      expect(ratioTotal).toBeGreaterThan(467835)
     })
   })
 })
