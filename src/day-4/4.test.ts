@@ -15,7 +15,7 @@ const fileToLines = (fileName: string) =>
 
 const parseCard = (line: string): Card => {
   const [cardIdStr, cardNumbers] = line.split(':')
-  const id = parseInt(cardIdStr.replace('Card ', ''))
+  const id = parseInt(cardIdStr.replace('Card', '').trim())
 
   const [targetNumbers, inputNumbers] = cardNumbers.split('|').map((str) =>
     str
@@ -108,4 +108,29 @@ describe('day 4.1', () => {
       expect(answer1).toBe(13)
     })
   })
+
+  describe('question 4.1', () => {
+    const FILENAME = '4.1-data.txt'
+    it('solves 4.1', () => {
+      const answer1 = fileToLines(FILENAME)
+        .map((l) => parseCard(l))
+        .map((c) => scoreCard(c))
+        .reduce((tot, score) => tot + score, 0)
+
+      console.log({
+        answer1,
+      })
+
+      expect(answer1).toBeGreaterThan(0)
+    })
+  })
+})
+
+// each "point" a card wins adds the future cards
+// ie const score1 = score(card1)
+// cards.push(...cards.slice(currentIndex + 1, score1))
+// can't simply run the sim I think that's silly
+// create a map of cards to scores
+describe('day 4.2', () => {
+  describe('test 4.2', () => {})
 })
