@@ -6,6 +6,9 @@ type Card = {
   targetNumbers: number[]
   inputNumbers: number[]
 }
+type ScoredCard = Card & {
+  score: number
+}
 
 const fileToLines = (fileName: string) =>
   readFileSync(join(__dirname, fileName), 'utf8')
@@ -31,15 +34,13 @@ const parseCard = (line: string): Card => {
     inputNumbers,
   }
 }
-const scoreCard = (card: Card) => {
+const countWinningNumbers = (card: Card) => {
   const winningNumbers = new Set(card.targetNumbers)
 
-  const numWinners = card.inputNumbers.reduce(
+  return card.inputNumbers.reduce(
     (tot, n) => tot + (winningNumbers.has(n) ? 1 : 0),
     0
   )
-
-  return calcScore(numWinners)
 }
 
 const calcScore = (numWon: number) => {
@@ -94,7 +95,8 @@ describe('day 4.1', () => {
     it('scores all test cards correctly', () => {
       const scores = fileToLines(FILENAME)
         .map((l) => parseCard(l))
-        .map((c) => scoreCard(c))
+        .map((c) => countWinningNumbers(c))
+        .map((n) => calcScore(n))
 
       expect(scores).toEqual([8, 2, 2, 1, 0, 0])
     })
@@ -102,7 +104,8 @@ describe('day 4.1', () => {
     it('solves test 4.1', () => {
       const answer1 = fileToLines(FILENAME)
         .map((l) => parseCard(l))
-        .map((c) => scoreCard(c))
+        .map((c) => countWinningNumbers(c))
+        .map((n) => calcScore(n))
         .reduce((tot, score) => tot + score, 0)
 
       expect(answer1).toBe(13)
@@ -114,7 +117,8 @@ describe('day 4.1', () => {
     it('solves 4.1', () => {
       const answer1 = fileToLines(FILENAME)
         .map((l) => parseCard(l))
-        .map((c) => scoreCard(c))
+        .map((c) => countWinningNumbers(c))
+        .map((n) => calcScore(n))
         .reduce((tot, score) => tot + score, 0)
 
       console.log({
@@ -131,6 +135,60 @@ describe('day 4.1', () => {
 // cards.push(...cards.slice(currentIndex + 1, score1))
 // can't simply run the sim I think that's silly
 // create a map of cards to scores
+
+// so I was totally wrong
+// I thought I had to create a queue and keep adding to the end
+// but it was just a Map
+// had to read the question properly
+const countCards = (fileName: string) => {
+  const cards = fileToLines(fileName)
+    .map((l) => parseCard(l))
+    .map((c) => ({
+      ...c,
+      winningNumbers: countWinningNumbers(c),
+    }))
+  const cardCountMap = new Map<number, number>()
+  cards.forEach((c) => {
+    cardCountMap.set(c.id, 1)
+  })
+
+  cards.forEach((c) => {
+    if (c.winningNumbers === 0) {
+      return
+    }
+
+    const currentCardCount = cardCountMap.get(c.id) ?? 1
+
+    const toIncrement = cards.slice(c.id, c.id + c.winningNumbers)
+    toIncrement.forEach((toInc) => {
+      const currentValue = cardCountMap.get(toInc.id) ?? 1
+      cardCountMap.set(toInc.id, currentValue + currentCardCount)
+    })
+  })
+
+  return [...cardCountMap.values()].reduce((tot, score) => tot + score, 0)
+}
 describe('day 4.2', () => {
-  describe('test 4.2', () => {})
+  describe('test 4.2', () => {
+    const FILENAME = '4.1-test-data.txt'
+
+    it('can solve test 4.2', () => {
+      const totalCards = countCards(FILENAME)
+
+      expect(totalCards).toBe(30)
+    })
+  })
+
+  describe('question 4.2', () => {
+    const FILENAME = '4.1-data.txt'
+    it('can solve question 4.2', () => {
+      const totalCards = countCards(FILENAME)
+
+      console.log({
+        answer2: totalCards,
+      })
+
+      expect(totalCards).toBeGreaterThan(30)
+    })
+  })
 })
