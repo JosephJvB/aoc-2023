@@ -1,6 +1,14 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+/**
+ * from reddit
+ * A simpler brute force would just be to start from the bottom and see when you win.
+ * then start from the highest time waited and see when you win.
+ * Once you have both speeds, its just
+ * 1 + first_speed_you_win_at + last_speed_you_win_at
+ */
+
 type BoatRace = {
   timeMs: number
   distanceMm: number
