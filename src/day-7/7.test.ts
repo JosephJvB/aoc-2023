@@ -1,21 +1,21 @@
 const CARDS = [
-  'A',
-  'K',
-  'Q',
-  'J',
-  'T',
-  '9',
-  '8',
-  '7',
-  '6',
-  '5',
-  '4',
-  '3',
-  '2',
+  'A', // 12
+  'K', // 11
+  'Q', // 10
+  'J', // 9
+  'T', // 8
+  '9', // 7
+  '8', // 6
+  '7', // 5
+  '6', // 4
+  '5', // 3
+  '4', // 2
+  '3', // 1
+  '2', // 0
 ] as const
 
 const CARD_STRENGTHS = CARDS.reduce((map, c, i) => {
-  map.set(c, 20 - i) // stronger cards earlier
+  map.set(c, 12 - i) // stronger cards earlier
   return map
 }, new Map<string, number>())
 
@@ -41,6 +41,7 @@ type Hand = Array<Card>
 
 type Score = {
   firstCard: Card
+  firstCardValue: number
   type: HandType
 }
 
@@ -96,7 +97,8 @@ const scoreHand = (hand: Hand): Score => {
   }
 
   return {
-    firstCard: hand[0] as Card,
+    firstCard: hand[0],
+    firstCardValue: CARD_STRENGTHS.get(hand[0]) ?? -1,
     type: getHandType(hand),
   }
 }
@@ -109,6 +111,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('3')
+      expect(score.firstCardValue).toBe(1)
       expect(score.type).toBe('one-pair')
     })
 
@@ -118,6 +121,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('T')
+      expect(score.firstCardValue).toBe(8)
       expect(score.type).toBe('x3')
     })
 
@@ -127,6 +131,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('K')
+      expect(score.firstCardValue).toBe(11)
       expect(score.type).toBe('two-pair')
     })
 
@@ -136,6 +141,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('K')
+      expect(score.firstCardValue).toBe(11)
       expect(score.type).toBe('two-pair')
     })
 
@@ -145,6 +151,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('Q')
+      expect(score.firstCardValue).toBe(10)
       expect(score.type).toBe('x3')
     })
 
@@ -154,6 +161,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('Q')
+      expect(score.firstCardValue).toBe(10)
       expect(score.type).toBe('full-house')
     })
 
@@ -163,6 +171,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('Q')
+      expect(score.firstCardValue).toBe(10)
       expect(score.type).toBe('x4')
     })
 
@@ -172,6 +181,7 @@ describe('day 7.1', () => {
       const score = scoreHand(input)
 
       expect(score.firstCard).toBe('Q')
+      expect(score.firstCardValue).toBe(10)
       expect(score.type).toBe('x5')
     })
   })
