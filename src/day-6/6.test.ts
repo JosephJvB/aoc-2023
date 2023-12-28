@@ -186,3 +186,69 @@ describe('day 6.1', () => {
     })
   })
 })
+
+const parseFile2 = (fileName: string) => {
+  const results = parseFile(fileName)
+
+  return {
+    timeMs: parseInt(results.reduce((tot, n) => tot + n.timeMs, '')),
+    distanceMm: parseInt(results.reduce((tot, n) => tot + n.distanceMm, '')),
+  }
+}
+
+const evalRace2 = (raceDurationMs: number, previousRecordMm: number) => {
+  let beatsPrevRecord = 0
+
+  const limit = Math.floor(raceDurationMs / 2)
+  for (let i = 1; i <= limit; i++) {
+    const distance = calcDistance(raceDurationMs, i)
+    if (distance > previousRecordMm) {
+      beatsPrevRecord++
+    }
+  }
+
+  beatsPrevRecord *= 2
+
+  if (raceDurationMs % 2 === 0) {
+    beatsPrevRecord--
+  }
+
+  return beatsPrevRecord
+}
+
+describe('day 6.2', () => {
+  describe('test 6.2', () => {
+    const FILENAME = '6.1-test-data.txt'
+
+    it('can parse 6.2 test data', () => {
+      const result = parseFile2(FILENAME)
+
+      expect(result.distanceMm).toBe(940200)
+      expect(result.timeMs).toBe(71530)
+    })
+
+    it('can calculate a single race', () => {
+      const input = parseFile2(FILENAME)
+
+      const result = evalRace2(input.timeMs, input.distanceMm)
+
+      expect(result).toBe(71503)
+    })
+  })
+
+  describe('question 6.2', () => {
+    const FILENAME = '6.1-data.txt'
+
+    it('can naively solve 6.2', () => {
+      const input = parseFile2(FILENAME)
+
+      const answer2 = evalRace2(input.timeMs, input.distanceMm)
+
+      console.log({
+        answer2,
+      })
+
+      expect(answer2).toBeGreaterThan(71503)
+    })
+  })
+})
