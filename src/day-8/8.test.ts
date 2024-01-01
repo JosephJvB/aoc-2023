@@ -43,27 +43,28 @@ const parseFile = (fileName: string): Network => {
 
 const traverse = (network: Network) => {
   let steps = 0
-  let current = network.nodes.get('AAA')!
   let i = 0
-  while (current.id !== 'ZZZ') {
+
+  let currentNode = network.nodes.get('AAA')
+  if (!currentNode) {
+    throw new Error('unable to find start node "AAA"')
+  }
+
+  while (currentNode.id !== 'ZZZ') {
     const nextDirection = network.instructions[i]
-    const nextNode = network.nodes.get(current[nextDirection])
+    const nextNode = network.nodes.get(currentNode[nextDirection])
     if (!nextNode) {
       throw new Error(
         `no next node ${JSON.stringify({
           nextDirection,
-          current,
+          currentNode,
         })}`
       )
     }
 
-    current = nextNode
-    if (i === network.instructions.length - 1) {
-      i = 0
-    } else {
-      i++
-    }
+    currentNode = nextNode
     steps++
+    i = i + 1 === network.instructions.length ? 0 : i + 1
   }
 
   return steps
