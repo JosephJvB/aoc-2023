@@ -139,4 +139,20 @@ describe('day 8.1', () => {
       expect(steps).toBe(6)
     })
   })
+
+  describe('question 8.1', () => {
+    const FILENAME = '8-data.txt'
+
+    it('can solve question 8.1', () => {
+      const network = parseFile(FILENAME)
+
+      const steps = traverse(network)
+
+      console.log({
+        answer1: steps,
+      })
+
+      expect(steps).toBeGreaterThan(6)
+    })
+  })
 })
