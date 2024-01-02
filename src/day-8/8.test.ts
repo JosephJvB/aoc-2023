@@ -157,3 +157,64 @@ describe('day 8.1', () => {
     })
   })
 })
+
+const multiTraverse = (network: Network) => {
+  let steps = 0
+  let i = 0
+
+  let nodes = [...network.nodes.values()].filter((n) => n.id.endsWith('A'))
+  console.log(nodes.length, 'starting nodes')
+
+  while (!!nodes.find((n) => !n.id.endsWith('Z'))) {
+    const nextDirection = network.instructions[i]
+    const nextNodes = nodes.map((n) => {
+      const nextNode = network.nodes.get(n[nextDirection])
+      if (!nextNode) {
+        throw new Error(
+          `Failed to find nextNode ${JSON.stringify({
+            node: n,
+            nextDirection,
+          })}`
+        )
+      }
+
+      return nextNode
+    })
+
+    nodes = nextNodes
+    i = i + 1 === network.instructions.length ? 0 : i + 1
+    steps++
+  }
+
+  return steps
+}
+describe('day 8.2', () => {
+  describe('test 8.2', () => {
+    const FILENAME = '8.2-test-data.txt'
+
+    it('can solve test 8.2', () => {
+      const network = parseFile(FILENAME)
+
+      const steps = multiTraverse(network)
+
+      expect(steps).toBe(6)
+    })
+  })
+
+  describe('question 8.2', () => {
+    const FILENAME = '8-data.txt'
+
+    // use Lowest Common Multiple approach says reddit
+    it.skip('can solve test 8.2', () => {
+      const network = parseFile(FILENAME)
+
+      const steps = multiTraverse(network)
+
+      console.log({
+        answer2: steps,
+      })
+
+      expect(steps).toBeGreaterThan(6)
+    })
+  })
+})
