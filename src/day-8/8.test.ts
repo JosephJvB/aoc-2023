@@ -231,7 +231,8 @@ const getLowestMultiples = (network: Network) => {
   return multiples
 }
 
-const gcd = (a: number, b: number): number => (!b ? a : gcd(b, a % b))
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+const lcm = (a: number, b: number): number => (a / gcd(a, b)) * b
 
 const solveLcm = (multiples: number[]) => {
   console.log(multiples)
@@ -277,6 +278,14 @@ describe('day 8.2', () => {
 
       expect(result).toBe(161)
     })
+
+    it('can solve LCM [2, 5, 17]', () => {
+      const input = [2, 5, 17]
+
+      const result = solveLcm(input)
+
+      expect(result).toBe(170)
+    })
   })
 
   describe('question 8.2', () => {
@@ -300,9 +309,13 @@ describe('day 8.2', () => {
 
       // [ 11309, 12361, 13939, 16043, 18673, 19199 ] ?
       // { answer2: 4.261200501047576e+22 } ??
+      // reddit python says:
+      // [11309, 12361, 13939, 16043, 18673, 19199]
+      // so I suspect my LCM function is not working properly
+      // CORRECT
       const multiples = getLowestMultiples(network)
 
-      const result = solveLcm(multiples)
+      const result = multiples.reduce(lcm)
 
       console.log({
         answer2: result,
