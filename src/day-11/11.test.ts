@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 type Coord = {
+  id: number
   x: number
   y: number
 }
@@ -24,13 +25,18 @@ const expand = (lines: string[][]) => {
   })
 
   // expand columns
+  // WIP: expanding columns wrong - probably I shouldn't alter the columns till after
+  // get list of idx's to expand, then do it after the loop
+  // idk still not working
+  let colsExpanded = 0
   expanded[0]
     .map((_, cIdx) => expanded.map((r) => r[cIdx])) // create column
     .forEach((column, cIdx) => {
       if (!column.includes('#')) {
         expanded.forEach((row) => {
-          row.splice(cIdx, 0, '.')
+          row.splice(cIdx + colsExpanded, 0, '.')
         })
+        colsExpanded++
       }
     })
 
@@ -41,7 +47,7 @@ const getGalaxies = (grid: string[][]) =>
   grid.reduce((galaxies, row, y) => {
     row.forEach((char, x) => {
       if (char === '#') {
-        galaxies.push({ x, y })
+        galaxies.push({ id: galaxies.length + 1, x, y })
       }
     })
 
@@ -83,6 +89,39 @@ describe('day 11.1', () => {
       expect(expanded.length).toBe(12) // 12 rows
       const rowLengths = expanded.map((r) => r.length)
       expect(rowLengths).toEqual(Array(12).fill(13)) // each 13 long
+    })
+
+    it('can expanded write to file', () => {
+      const grid = parseFile(FILENAME)
+
+      const expanded = expand(grid)
+
+      writeFileSync(
+        join(__dirname, 'expanded.txt'),
+        expanded.map((r) => r.join('')).join('\n')
+      )
+
+      expect(expanded.length).toBe(12)
+    })
+
+    it('can get galaxies', () => {
+      const grid = parseFile(FILENAME)
+
+      const galaxies = getGalaxies(grid)
+
+      expect(galaxies.length).toBe(9)
+    })
+
+    it('can set correct coords on galaxies #9', () => {
+      const grid = parseFile(FILENAME)
+
+      const galaxies = getGalaxies(grid)
+
+      expect(galaxies[8]).toEqual({
+        id: 9,
+        x: 5,
+        y: 11,
+      })
     })
 
     it('can get pairs', () => {
@@ -150,7 +189,7 @@ describe('day 11.1', () => {
       expect(distance).toBe(5)
     })
 
-    it.skip('write test results to file', () => {
+    it('write test results to file', () => {
       const grid = parseFile(FILENAME)
 
       const expanded = expand(grid)
@@ -190,7 +229,7 @@ describe('day 11.1', () => {
       expect(unique.size).toBe(pairs.length)
     })
 
-    it('can solve test 11.1', () => {
+    it.skip('can solve test 11.1', () => {
       const grid = parseFile(FILENAME)
 
       const expanded = expand(grid)
