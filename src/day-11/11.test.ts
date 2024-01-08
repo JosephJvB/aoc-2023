@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 type Coord = {
@@ -60,6 +60,10 @@ const getPairs = (galaxies: Coord[]) => {
   return pairs
 }
 
+const getDistance = ([a, b]: [Coord, Coord]) => {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+}
+
 describe('day 11.1', () => {
   describe('test 11.1', () => {
     const FILENAME = '11-test-data.txt'
@@ -89,6 +93,115 @@ describe('day 11.1', () => {
       const pairs = getPairs(galaxies)
 
       expect(pairs.length).toBe(36)
+    })
+
+    it('can calulate distance: 0,0 -> 1,1', () => {
+      const pair = [
+        { x: 0, y: 0 },
+        { x: 1, y: 1 },
+      ] as [Coord, Coord]
+
+      const distance = getDistance(pair)
+
+      expect(distance).toBe(2)
+    })
+
+    it('can calulate distance: 1,6 -> 5,11', () => {
+      const pair = [
+        { x: 1, y: 6 },
+        { x: 5, y: 11 },
+      ] as [Coord, Coord]
+
+      const distance = getDistance(pair)
+
+      expect(distance).toBe(9)
+    })
+
+    it('can calulate distance: 4,0 -> 9,10', () => {
+      const pair = [
+        { x: 4, y: 0 },
+        { x: 9, y: 10 },
+      ] as [Coord, Coord]
+
+      const distance = getDistance(pair)
+
+      expect(distance).toBe(15)
+    })
+
+    it('can calulate distance: 0,2 -> 12,7', () => {
+      const pair = [
+        { x: 0, y: 2 },
+        { x: 12, y: 7 },
+      ] as [Coord, Coord]
+
+      const distance = getDistance(pair)
+
+      expect(distance).toBe(17)
+    })
+
+    it('can calulate distance: 0,11 -> 5,11', () => {
+      const pair = [
+        { x: 0, y: 11 },
+        { x: 5, y: 11 },
+      ] as [Coord, Coord]
+
+      const distance = getDistance(pair)
+
+      expect(distance).toBe(5)
+    })
+
+    it.skip('write test results to file', () => {
+      const grid = parseFile(FILENAME)
+
+      const expanded = expand(grid)
+
+      const galaxies = getGalaxies(expanded)
+
+      const pairs = getPairs(galaxies)
+
+      const result = pairs.map((p) => ({
+        pair: p,
+        distance: getDistance(p),
+      }))
+
+      writeFileSync(
+        join(__dirname, 'pairs-distance.json'),
+        JSON.stringify(result, null, 2)
+      )
+
+      expect(result.length).toBe(36)
+    })
+
+    it('all pairs are unique', () => {
+      const grid = parseFile(FILENAME)
+
+      const expanded = expand(grid)
+
+      const galaxies = getGalaxies(expanded)
+
+      const pairs = getPairs(galaxies)
+
+      const unique = new Set()
+
+      pairs.forEach((p) => {
+        unique.add(JSON.stringify(p))
+      })
+
+      expect(unique.size).toBe(pairs.length)
+    })
+
+    it('can solve test 11.1', () => {
+      const grid = parseFile(FILENAME)
+
+      const expanded = expand(grid)
+
+      const galaxies = getGalaxies(expanded)
+
+      const pairs = getPairs(galaxies)
+
+      const result = pairs.reduce((tot, p) => tot + getDistance(p), 0)
+
+      expect(result).toBe(374) // i'm getting 386 ?
     })
   })
   describe('question 11.1', () => {
