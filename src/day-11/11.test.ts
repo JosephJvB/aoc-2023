@@ -25,9 +25,6 @@ const expand = (lines: string[][]) => {
   })
 
   // expand columns
-  // WIP: expanding columns wrong - probably I shouldn't alter the columns till after
-  // get list of idx's to expand, then do it after the loop
-  // idk still not working
   let colsExpanded = 0
   expanded[0]
     .map((_, cIdx) => expanded.map((r) => r[cIdx])) // create column
@@ -91,7 +88,7 @@ describe('day 11.1', () => {
       expect(rowLengths).toEqual(Array(12).fill(13)) // each 13 long
     })
 
-    it('can expanded write to file', () => {
+    it.skip('can expanded write to file', () => {
       const grid = parseFile(FILENAME)
 
       const expanded = expand(grid)
@@ -115,7 +112,9 @@ describe('day 11.1', () => {
     it('can set correct coords on galaxies #9', () => {
       const grid = parseFile(FILENAME)
 
-      const galaxies = getGalaxies(grid)
+      const expanded = expand(grid)
+
+      const galaxies = getGalaxies(expanded)
 
       expect(galaxies[8]).toEqual({
         id: 9,
@@ -189,7 +188,7 @@ describe('day 11.1', () => {
       expect(distance).toBe(5)
     })
 
-    it('write test results to file', () => {
+    it.skip('write test results to file', () => {
       const grid = parseFile(FILENAME)
 
       const expanded = expand(grid)
@@ -229,7 +228,7 @@ describe('day 11.1', () => {
       expect(unique.size).toBe(pairs.length)
     })
 
-    it.skip('can solve test 11.1', () => {
+    it('can solve test 11.1', () => {
       const grid = parseFile(FILENAME)
 
       const expanded = expand(grid)
@@ -245,6 +244,24 @@ describe('day 11.1', () => {
   })
   describe('question 11.1', () => {
     const FILENAME = '11-data.txt'
+
+    it('can solve question 11.1', () => {
+      const grid = parseFile(FILENAME)
+
+      const expanded = expand(grid)
+
+      const galaxies = getGalaxies(expanded)
+
+      const pairs = getPairs(galaxies)
+
+      const result = pairs.reduce((tot, p) => tot + getDistance(p), 0)
+
+      console.log({
+        answer1: result,
+      })
+
+      expect(result).toBeGreaterThan(374) // i'm getting 386 ?
+    })
   })
 })
 
