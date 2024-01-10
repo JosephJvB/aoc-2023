@@ -12,6 +12,7 @@ const getGrids = (lines: string[]) => {
     if (!line) {
       grids.push(grid)
       grid = []
+      return
     }
 
     grid.push(line)
@@ -20,10 +21,9 @@ const getGrids = (lines: string[]) => {
   return grids
 }
 
-const parseGridElements = (grid: string[]) => {
-  const rows = grid.map((l) => l)
-
+const getColumns = (grid: string[]) => {
   const columns: string[] = []
+
   for (let i = 0; i < grid[0].length; i++) {
     let column = ''
 
@@ -34,10 +34,7 @@ const parseGridElements = (grid: string[]) => {
     columns.push(column)
   }
 
-  return {
-    rows,
-    columns,
-  }
+  return columns
 }
 
 /**
@@ -75,6 +72,21 @@ const verifyMirrorIndex = (lines: string[], idx: number) => {
   return true
 }
 
+const scoreGrid = (g: string[]) => {
+  const rowIndex = findMirrorIndexByMatchingPair(g)
+  if (rowIndex > -1) {
+    return 100 * (rowIndex + 1)
+  }
+
+  const columns = getColumns(g)
+  const columnIndex = findMirrorIndexByMatchingPair(columns)
+  if (columnIndex > -1) {
+    return columnIndex + 1
+  }
+
+  return -1
+}
+
 describe('day 13.1', () => {
   /**
    * find vertical / horizontal mirror in a 2D grid
@@ -97,11 +109,12 @@ describe('day 13.1', () => {
 
       const grids = getGrids(lines)
 
-      const { rows, columns } = parseGridElements(grids[0])
+      expect(grids[0].length).toBe(7)
 
-      expect(rows.length).toBe(7)
+      const columns = getColumns(grids[0])
+
       expect(columns.length).toBe(9)
-      expect(rows).toEqual([
+      expect(grids[0]).toEqual([
         '#.##..##.',
         '..#.##.#.',
         '##......#',
@@ -128,9 +141,7 @@ describe('day 13.1', () => {
 
       const grids = getGrids(lines)
 
-      const { rows, columns } = parseGridElements(grids[0])
-
-      const rowMirror = findMirrorIndexByMatchingPair(rows)
+      const rowMirror = findMirrorIndexByMatchingPair(grids[0])
 
       expect(rowMirror).toBe(-1)
     })
@@ -140,7 +151,7 @@ describe('day 13.1', () => {
 
       const grids = getGrids(lines)
 
-      const { rows, columns } = parseGridElements(grids[0])
+      const columns = getColumns(grids[0])
 
       expect(columns[4]).toBe(columns[5])
 
@@ -149,26 +160,62 @@ describe('day 13.1', () => {
       expect(columnMirror).toBe(4)
     })
 
+    it('can find row mirrorIndex in grid 2', () => {
+      const lines = parseFile(FILENAME)
+
+      const grids = getGrids(lines)
+
+      expect(grids[1][3]).toBe(grids[1][4])
+
+      const rowMirror = findMirrorIndexByMatchingPair(grids[1])
+
+      expect(rowMirror).toBe(3)
+    })
+
+    it('can find column mirrorIndex in grid 2', () => {
+      const lines = parseFile(FILENAME)
+
+      const grids = getGrids(lines)
+
+      const columns = getColumns(grids[1])
+
+      const columnMirror = findMirrorIndexByMatchingPair(columns)
+
+      expect(columnMirror).toBe(-1)
+    })
+
+    it('can score grid 1', () => {
+      const lines = parseFile(FILENAME)
+
+      const grids = getGrids(lines)
+
+      const gridScore = scoreGrid(grids[0])
+
+      expect(gridScore).toBe(5)
+    })
+
+    it('can score grid 2', () => {
+      const lines = parseFile(FILENAME)
+
+      const grids = getGrids(lines)
+
+      const gridScore = scoreGrid(grids[1])
+
+      expect(gridScore).toBe(400)
+    })
+
     it('can solve test 13.1', () => {
       const lines = parseFile(FILENAME)
 
       const grids = getGrids(lines)
 
-      const total = grids.reduce((tot, g, gridIndex) => {
-        const { rows, columns } = parseGridElements(g)
-
-        const rowIndex = findMirrorIndexByMatchingPair(rows)
-        if (rowIndex > -1) {
-          return tot + 100 * rowIndex
-        }
-        const columnIndex = findMirrorIndexByMatchingPair(columns)
-        if (columnIndex > -1) {
-          return tot + columnIndex
+      const total = grids.reduce((tot, g, i) => {
+        const gridScore = scoreGrid(g)
+        if (gridScore === -1) {
+          throw new Error(`failed to score grid[${i}]`)
         }
 
-        throw new Error(
-          `Failed to find row or column index for grid[${gridIndex}]`
-        )
+        return tot + gridScore
       }, 0)
 
       expect(total).toBe(405)
@@ -176,6 +223,27 @@ describe('day 13.1', () => {
   })
   describe('question 13.1', () => {
     const FILENAME = '13-data.txt'
+
+    it('can solve question 13.1', () => {
+      const lines = parseFile(FILENAME)
+
+      const grids = getGrids(lines)
+
+      const total = grids.reduce((tot, g, i) => {
+        const gridScore = scoreGrid(g)
+        if (gridScore === -1) {
+          throw new Error(`failed to score grid[${i}]`)
+        }
+
+        return tot + gridScore
+      }, 0)
+
+      console.log({
+        answer1: total,
+      })
+
+      expect(total).toBeGreaterThan(405)
+    })
   })
 })
 
