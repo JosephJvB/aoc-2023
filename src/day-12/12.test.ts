@@ -1,6 +1,9 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+// dynamic programming? grazy stuff
+// https://www.reddit.com/r/adventofcode/comments/18ge41g/comment/kd09kvj/
+
 const parseFile = (fileName: string) =>
   readFileSync(join(__dirname, fileName), 'utf-8').split('\n')
 
