@@ -30,7 +30,7 @@ const files = [
       "import { join } from 'path'",
       '',
       'const parseFile = (fileName: string) =>',
-      "  readFileSync(join(__dirname, fileName), 'utf-8').split('\\n')",
+      "  readFileSync(join(__dirname, fileName), 'utf-8').trim().split('\\n')",
       '',
       `describe('day ${dayNumber}.1', () => {`,
       `  describe('test ${dayNumber}.1', () => {`,
