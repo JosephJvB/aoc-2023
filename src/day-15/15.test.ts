@@ -126,6 +126,16 @@ const placeLensesInBoxes = (labels: string[]) => {
   return boxes
 }
 
+const scoreBoxes = (boxes: Lens[][]) =>
+  boxes.reduce(
+    (tot, box, boxIdx) =>
+      tot +
+      box.reduce((boxTotal, lens, lensIdx) => {
+        return boxTotal + (boxIdx + 1) * (lensIdx + 1) * lens.focalLength
+      }, 0),
+    0
+  )
+
 describe('day 15.2', () => {
   describe('test 15.2', () => {
     const FILENAME = '15-test-data.txt'
@@ -183,8 +193,32 @@ describe('day 15.2', () => {
         { hash: 'pc', focalLength: 6, boxIdx: 3 },
       ])
     })
+
+    it('can solve test 15.2', () => {
+      const hashes = parseFile(FILENAME)
+
+      const boxes = placeLensesInBoxes(hashes)
+
+      const score = scoreBoxes(boxes)
+
+      expect(score).toBe(145)
+    })
   })
   describe('question 15.2', () => {
     const FILENAME = '15-data.txt'
+
+    it('can solve question 15.2', () => {
+      const hashes = parseFile(FILENAME)
+
+      const boxes = placeLensesInBoxes(hashes)
+
+      const score = scoreBoxes(boxes)
+
+      console.log({
+        answer2: score,
+      })
+
+      expect(score).toBeGreaterThan(145)
+    })
   })
 })
