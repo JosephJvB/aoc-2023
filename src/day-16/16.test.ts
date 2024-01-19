@@ -6,7 +6,7 @@ type Mirror = (typeof Mirrors)[number]
 const Splitters = ['|', '-'] as const
 type Splitter = (typeof Splitters)[number]
 
-const BouncyTiles = new Set([...Mirrors, Splitters])
+const BouncyTiles = new Set([...Mirrors, ...Splitters])
 
 type Coord = {
   x: number
@@ -29,6 +29,7 @@ const toGrid = (lines: string[]) =>
   lines.filter((l) => !!l).map((l) => l.trim().split(''))
 
 const coordToId = (coord: Coord) => [coord.x, coord.y].join('x')
+const beamToId = (beam: Beam) => [beam.direction, beam.x, beam.y].join('x')
 
 const moveBeam = (beam: Beam) => {
   switch (beam.direction) {
@@ -53,49 +54,80 @@ const getGridCoordHandler = (grid: string[][]) => (coord: Coord) =>
   coord.x < grid[0].length &&
   coord.y < grid.length
 
+const saveGrid = (grid: string[][], seenCoords: Set<string>) => {
+  const gridStr = grid
+    .map((r, rIdx) =>
+      r
+        .map((c, cIdx) => {
+          const coordId = [cIdx, rIdx].join('x')
+          if (BouncyTiles.has(c as any)) return c
+          return seenCoords.has(coordId) ? '*' : c
+        })
+        .join('')
+    )
+    .join('\n')
+
+  writeFileSync(__dirname + '/beam-path.txt', gridStr)
+}
+
 const solveGrid = (grid: string[][]) => {
   const coordInBounds = getGridCoordHandler(grid)
 
-  const energizedTiles = new Set()
+  const energizedTiles = new Set<string>()
 
   let beams: Beam[] = [{ x: 0, y: 0, direction: 'E' }]
-  const allSeenTiles = new Set(['0x0'])
+  const prevBeams = new Set<string>()
   while (beams.length) {
     const nextBeams: Beam[] = []
 
     beams.forEach((beam) => {
-      const tileId = coordToId(beam)
-      allSeenTiles.add(tileId)
+      const beamClone = { ...beam }
       if (!coordInBounds(beam)) {
         return
       }
-      moveBeam(beam)
+      // maybe check if beam @location&direction has been logged before
+      // if so - don't calculate the beam again
+      const beamId = beamToId(beam)
+      if (prevBeams.has(beamId)) {
+        return
+      }
+      prevBeams.add(beamId)
+
+      const tileId = coordToId(beam)
+      energizedTiles.add(tileId)
 
       const currentTile = grid[beam.y][beam.x]
       if (currentTile === '.') {
-        energizedTiles.add(tileId)
+        moveBeam(beam)
         nextBeams.push(beam)
-        return
       }
 
-      // if a beam bounces on to another mirror/splitter
-      // i need to move that beam again!
-      // moveBeam '.' => '|'
-      //
-
+      // a nicer way to write this please
+      // mirrors
       if (currentTile === '/') {
-        beam.direction = beam.direction === 'N' ? 'E' : 'W'
-        beam.x = beam.x + beam.direction === 'N' ? 1 : -1
-        nextBeams.push(beam)
-        return
+        if (['N', 'S'].includes(beam.direction)) {
+          beam.x = beam.x + (beam.direction === 'N' ? 1 : -1)
+          beam.direction = beam.direction === 'N' ? 'E' : 'W'
+          nextBeams.push(beam)
+        } else if (['E', 'W'].includes(beam.direction)) {
+          beam.y = beam.y + (beam.direction === 'E' ? -1 : 1)
+          beam.direction = beam.direction === 'E' ? 'N' : 'S'
+          nextBeams.push(beam)
+        }
       }
       if (currentTile === '\\') {
-        beam.direction = beam.direction === 'N' ? 'W' : 'E'
-        beam.x = beam.x + beam.direction === 'N' ? -1 : 1
-        nextBeams.push(beam)
-        return
+        if (['N', 'S'].includes(beam.direction)) {
+          beam.x = beam.x + (beam.direction === 'N' ? -1 : 1)
+          beam.direction = beam.direction === 'N' ? 'W' : 'E'
+          nextBeams.push(beam)
+        } else if (['E', 'W'].includes(beam.direction)) {
+          beam.y = beam.y + (beam.direction === 'E' ? 1 : -1)
+          beam.direction = beam.direction === 'E' ? 'S' : 'N'
+          nextBeams.push(beam)
+        }
       }
 
+      // splitters
       if (currentTile === '|') {
         if (['E', 'W'].includes(beam.direction)) {
           nextBeams.push(
@@ -111,9 +143,9 @@ const solveGrid = (grid: string[][]) => {
             }
           )
         } else {
+          moveBeam(beam)
           nextBeams.push(beam)
         }
-        return
       }
 
       if (currentTile === '-') {
@@ -131,25 +163,25 @@ const solveGrid = (grid: string[][]) => {
             }
           )
         } else {
+          moveBeam(beam)
           nextBeams.push(beam)
         }
-        return
+      }
+      if (nextBeams.find((b) => b.x === 4 && b.y === 5)) {
+        throw new Error(
+          `how did we get here? ${JSON.stringify({
+            beam,
+            beamClone,
+            currentTile,
+          })}`
+        )
       }
     })
 
     beams = nextBeams
   }
 
-  const nextGrid = grid.map((row, rowIndex) =>
-    row.map((col, colIndex) => {
-      const id = coordToId({ x: colIndex, y: rowIndex })
-      return allSeenTiles.has(id) ? '#' : col
-    })
-  )
-  writeFileSync(
-    join(__dirname, 'beam-path.txt'),
-    nextGrid.map((r) => r.join('')).join('\n')
-  )
+  saveGrid(grid, energizedTiles)
 
   return energizedTiles.size
 }
