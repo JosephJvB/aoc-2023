@@ -159,12 +159,12 @@ const saveGrid = (grid: Tile[][], seenCoords: Set<string>) => {
   writeFileSync(__dirname + '/beam-path.txt', gridStr)
 }
 
-const solveGrid = (grid: Tile[][]) => {
+const solveGrid = (grid: Tile[][], startingBeam: Beam) => {
   const coordInBounds = getGridCoordHandler(grid)
 
   const energizedTiles = new Set<string>()
 
-  let beams: Beam[] = [{ x: 0, y: 0, direction: 'E' }]
+  let beams: Beam[] = [startingBeam]
   const prevBeams = new Set<string>()
   while (beams.length) {
     const nextBeams: Beam[] = []
@@ -193,9 +193,42 @@ const solveGrid = (grid: Tile[][]) => {
     beams = nextBeams
   }
 
-  saveGrid(grid, energizedTiles)
+  // saveGrid(grid, energizedTiles)
 
   return energizedTiles.size
+}
+
+const getAllStartBeams = (grid: Tile[][]) => {
+  const starts: Beam[] = []
+  //top
+  for (let i = 0; i < grid[0].length; i++) {
+    // top
+    starts.push({
+      x: i,
+      y: 0,
+      direction: 'S',
+    })
+    // bottom
+    starts.push({
+      x: i,
+      y: grid.length - 1,
+      direction: 'N',
+    })
+    // left
+    starts.push({
+      x: 0,
+      y: i,
+      direction: 'E',
+    })
+    // right
+    starts.push({
+      x: grid.length - 1,
+      y: i,
+      direction: 'W',
+    })
+  }
+
+  return starts
 }
 
 describe('day 16.1', () => {
@@ -294,7 +327,11 @@ describe('day 16.1', () => {
 
       const grid = toGrid(lines)
 
-      const energizedTiles = solveGrid(grid)
+      const energizedTiles = solveGrid(grid, {
+        x: 0,
+        y: 0,
+        direction: 'E',
+      })
 
       expect(energizedTiles).toBe(46)
     })
@@ -307,7 +344,11 @@ describe('day 16.1', () => {
 
       const grid = toGrid(lines)
 
-      const energizedTiles = solveGrid(grid)
+      const energizedTiles = solveGrid(grid, {
+        x: 0,
+        y: 0,
+        direction: 'E',
+      })
 
       console.log({
         answer1: energizedTiles,
@@ -318,11 +359,86 @@ describe('day 16.1', () => {
   })
 })
 
+// can you just brute force it?
 describe('day 16.2', () => {
   describe('test 16.2', () => {
     const FILENAME = '16-test-data.txt'
+
+    it('can get starting beams', () => {
+      const lines = parseFile(FILENAME)
+
+      const grid = toGrid(lines)
+
+      const startBeams = getAllStartBeams(grid)
+
+      expect(startBeams.length).toBe(40)
+
+      const withZero = startBeams.filter((b) => b.x === 0 || b.y === 0)
+      expect(withZero.length).toBe(22)
+      const with9 = startBeams.filter((b) => b.x === 9 || b.y === 9)
+      expect(with9.length).toBe(22)
+    })
+
+    it('can solve test 16.2', () => {
+      const lines = parseFile(FILENAME)
+
+      const grid = toGrid(lines)
+
+      const startBeams = getAllStartBeams(grid)
+
+      let maxCoverage = 0
+      let maxBeam: Beam | null = null
+      startBeams.forEach((b) => {
+        const beam = { ...b }
+        const coverage = solveGrid(grid, b)
+        if (coverage > maxCoverage) {
+          maxCoverage = coverage
+          maxBeam = beam
+        }
+      })
+
+      expect(maxCoverage).toBe(51)
+      expect(maxBeam).toEqual({
+        x: 3,
+        y: 0,
+        direction: 'S',
+      })
+    })
   })
   describe('question 16.2', () => {
     const FILENAME = '16-data.txt'
+
+    it('can solve question 16.2', () => {
+      const lines = parseFile(FILENAME)
+
+      const grid = toGrid(lines)
+
+      const startBeams = getAllStartBeams(grid)
+
+      let maxCoverage = 0
+      let maxBeam: Beam | null = null
+
+      console.time('16.2')
+      startBeams.forEach((b, i) => {
+        const beam = { ...b }
+        // let t1 = Date.now()
+        const coverage = solveGrid(grid, b)
+        // let t2 = Date.now()
+        // const ts = Math.round(t2 - t1)
+        // process.stdout.write(`beam:${i + 1} solved in ${ts}ms\r`)
+        if (coverage > maxCoverage) {
+          maxCoverage = coverage
+          maxBeam = beam
+        }
+      })
+      console.timeEnd('16.2')
+
+      console.log({
+        answer2: maxCoverage,
+        beam: maxBeam,
+      })
+
+      expect(maxCoverage).toBeGreaterThan(51)
+    })
   })
 })
