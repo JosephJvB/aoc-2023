@@ -5,6 +5,7 @@ const Mirrors = ['/', '\\'] as const
 type Mirror = (typeof Mirrors)[number]
 const Splitters = ['|', '-'] as const
 type Splitter = (typeof Splitters)[number]
+type Tile = Mirror | Splitter | '.'
 
 const BouncyTiles = new Set([...Mirrors, ...Splitters])
 
@@ -16,22 +17,95 @@ type Direction = 'N' | 'E' | 'S' | 'W'
 type Beam = Coord & {
   direction: Direction
 }
-const b: Beam = {
-  x: 0,
-  y: 0,
-  direction: Math.random() > 0.5 ? 'N' : 'S',
-}
 
 const parseFile = (fileName: string) =>
   readFileSync(join(__dirname, fileName), 'utf-8').trim().split('\n')
 
 const toGrid = (lines: string[]) =>
-  lines.filter((l) => !!l).map((l) => l.trim().split(''))
+  lines.filter((l) => !!l).map((l) => l.trim().split('')) as Tile[][]
 
 const coordToId = (coord: Coord) => [coord.x, coord.y].join('x')
 const beamToId = (beam: Beam) => [beam.direction, beam.x, beam.y].join('x')
 
-const moveBeam = (beam: Beam) => {
+const handleHorizontalSplitter = (beam: Beam): Beam[] => {
+  if (['E', 'W'].includes(beam.direction)) {
+    return handleDot(beam)
+  }
+
+  return [
+    {
+      x: beam.x + 1,
+      y: beam.y,
+      direction: 'E',
+    },
+    {
+      x: beam.x - 1,
+      y: beam.y,
+      direction: 'W',
+    },
+  ]
+}
+const handleVerticalSplitter = (beam: Beam): Beam[] => {
+  if (['N', 'S'].includes(beam.direction)) {
+    return handleDot(beam)
+  }
+
+  return [
+    {
+      x: beam.x,
+      y: beam.y - 1,
+      direction: 'N',
+    },
+    {
+      x: beam.x,
+      y: beam.y + 1,
+      direction: 'S',
+    },
+  ]
+}
+const handleBackslash = (beam: Beam) => {
+  switch (beam.direction) {
+    case 'N':
+      beam.x--
+      beam.direction = 'W'
+      break
+    case 'E':
+      beam.y++
+      beam.direction = 'S'
+      break
+    case 'S':
+      beam.x++
+      beam.direction = 'E'
+      break
+    case 'W':
+      beam.y--
+      beam.direction = 'N'
+      break
+  }
+  return [beam]
+}
+const handleFwdslash = (beam: Beam) => {
+  switch (beam.direction) {
+    case 'N':
+      beam.x++
+      beam.direction = 'E'
+      break
+    case 'E':
+      beam.y--
+      beam.direction = 'N'
+      break
+    case 'S':
+      beam.x--
+      beam.direction = 'W'
+      break
+    case 'W':
+      beam.y++
+      beam.direction = 'S'
+      break
+  }
+  return [beam]
+}
+const handleDot = (beam: Beam) => {
   switch (beam.direction) {
     case 'N':
       beam.y--
@@ -46,6 +120,21 @@ const moveBeam = (beam: Beam) => {
       beam.x--
       break
   }
+  return [beam]
+}
+const moveBeam = (beam: Beam, char: Tile): Beam[] => {
+  switch (char) {
+    case '-':
+      return handleHorizontalSplitter(beam)
+    case '|':
+      return handleVerticalSplitter(beam)
+    case '/':
+      return handleFwdslash(beam)
+    case '\\':
+      return handleBackslash(beam)
+    case '.':
+      return handleDot(beam)
+  }
 }
 
 const getGridCoordHandler = (grid: string[][]) => (coord: Coord) =>
@@ -54,7 +143,7 @@ const getGridCoordHandler = (grid: string[][]) => (coord: Coord) =>
   coord.x < grid[0].length &&
   coord.y < grid.length
 
-const saveGrid = (grid: string[][], seenCoords: Set<string>) => {
+const saveGrid = (grid: Tile[][], seenCoords: Set<string>) => {
   const gridStr = grid
     .map((r, rIdx) =>
       r
@@ -70,7 +159,7 @@ const saveGrid = (grid: string[][], seenCoords: Set<string>) => {
   writeFileSync(__dirname + '/beam-path.txt', gridStr)
 }
 
-const solveGrid = (grid: string[][]) => {
+const solveGrid = (grid: Tile[][]) => {
   const coordInBounds = getGridCoordHandler(grid)
 
   const energizedTiles = new Set<string>()
@@ -81,101 +170,24 @@ const solveGrid = (grid: string[][]) => {
     const nextBeams: Beam[] = []
 
     beams.forEach((beam) => {
-      const beamClone = { ...beam }
+      // oob
       if (!coordInBounds(beam)) {
         return
       }
-      // maybe check if beam @location&direction has been logged before
-      // if so - don't calculate the beam again
+
+      // exit on repeats
       const beamId = beamToId(beam)
       if (prevBeams.has(beamId)) {
         return
       }
       prevBeams.add(beamId)
 
-      const tileId = coordToId(beam)
-      energizedTiles.add(tileId)
+      energizedTiles.add(coordToId(beam))
 
       const currentTile = grid[beam.y][beam.x]
-      if (currentTile === '.') {
-        moveBeam(beam)
-        nextBeams.push(beam)
-      }
+      const moveResult = moveBeam(beam, currentTile)
 
-      // a nicer way to write this please
-      // mirrors
-      if (currentTile === '/') {
-        if (['N', 'S'].includes(beam.direction)) {
-          beam.x = beam.x + (beam.direction === 'N' ? 1 : -1)
-          beam.direction = beam.direction === 'N' ? 'E' : 'W'
-          nextBeams.push(beam)
-        } else if (['E', 'W'].includes(beam.direction)) {
-          beam.y = beam.y + (beam.direction === 'E' ? -1 : 1)
-          beam.direction = beam.direction === 'E' ? 'N' : 'S'
-          nextBeams.push(beam)
-        }
-      }
-      if (currentTile === '\\') {
-        if (['N', 'S'].includes(beam.direction)) {
-          beam.x = beam.x + (beam.direction === 'N' ? -1 : 1)
-          beam.direction = beam.direction === 'N' ? 'W' : 'E'
-          nextBeams.push(beam)
-        } else if (['E', 'W'].includes(beam.direction)) {
-          beam.y = beam.y + (beam.direction === 'E' ? 1 : -1)
-          beam.direction = beam.direction === 'E' ? 'S' : 'N'
-          nextBeams.push(beam)
-        }
-      }
-
-      // splitters
-      if (currentTile === '|') {
-        if (['E', 'W'].includes(beam.direction)) {
-          nextBeams.push(
-            {
-              x: beam.x,
-              y: beam.y - 1,
-              direction: 'N',
-            },
-            {
-              x: beam.x,
-              y: beam.y + 1,
-              direction: 'S',
-            }
-          )
-        } else {
-          moveBeam(beam)
-          nextBeams.push(beam)
-        }
-      }
-
-      if (currentTile === '-') {
-        if (['N', 'S'].includes(beam.direction)) {
-          nextBeams.push(
-            {
-              x: beam.x + 1,
-              y: beam.y,
-              direction: 'E',
-            },
-            {
-              x: beam.x - 1,
-              y: beam.y,
-              direction: 'W',
-            }
-          )
-        } else {
-          moveBeam(beam)
-          nextBeams.push(beam)
-        }
-      }
-      if (nextBeams.find((b) => b.x === 4 && b.y === 5)) {
-        throw new Error(
-          `how did we get here? ${JSON.stringify({
-            beam,
-            beamClone,
-            currentTile,
-          })}`
-        )
-      }
+      nextBeams.push(...moveResult)
     })
 
     beams = nextBeams
