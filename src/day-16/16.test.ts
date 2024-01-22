@@ -286,6 +286,9 @@ describe('day 16.1', () => {
       expect(result).toBe(false)
     })
 
+    // missing tests: moveBeam
+    // for each tile, for each direction before / after
+
     it('can solve test 16.1', () => {
       const lines = parseFile(FILENAME)
 
@@ -298,6 +301,20 @@ describe('day 16.1', () => {
   })
   describe('question 16.1', () => {
     const FILENAME = '16-data.txt'
+
+    it('can solve question 16.1', () => {
+      const lines = parseFile(FILENAME)
+
+      const grid = toGrid(lines)
+
+      const energizedTiles = solveGrid(grid)
+
+      console.log({
+        answer1: energizedTiles,
+      })
+
+      expect(energizedTiles).toBeGreaterThan(46)
+    })
   })
 })
 
