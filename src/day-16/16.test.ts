@@ -5,11 +5,7 @@ const Mirrors = ['/', '\\'] as const
 type Mirror = (typeof Mirrors)[number]
 const Splitters = ['|', '-'] as const
 type Splitter = (typeof Splitters)[number]
-const VERTICAL_REDIRECTS: Direction[] = ['N', 'S']
-const HORIZONTAL_REDIRECTS: Direction[] = ['E', 'W']
 type Tile = Mirror | Splitter | '.'
-
-const BouncyTiles = new Set([...Mirrors, ...Splitters])
 
 type Coord = {
   x: number
@@ -19,6 +15,10 @@ type Direction = 'N' | 'E' | 'S' | 'W'
 type Beam = Coord & {
   direction: Direction
 }
+
+const SPECIAL_TILES = new Set<Mirror | Splitter>([...Mirrors, ...Splitters])
+const VERTICAL_REDIRECTS: Direction[] = ['N', 'S']
+const HORIZONTAL_REDIRECTS: Direction[] = ['E', 'W']
 
 const parseFile = (fileName: string) =>
   readFileSync(join(__dirname, fileName), 'utf-8').trim().split('\n')
@@ -116,7 +116,7 @@ const saveGrid = (grid: Tile[][], seenCoords: Set<string>) => {
       r
         .map((c, cIdx) => {
           const coordId = [cIdx, rIdx].join('x')
-          if (BouncyTiles.has(c as any)) return c
+          if (SPECIAL_TILES.has(c as any)) return c
           return seenCoords.has(coordId) ? '*' : c
         })
         .join('')
