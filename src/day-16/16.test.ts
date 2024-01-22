@@ -5,6 +5,8 @@ const Mirrors = ['/', '\\'] as const
 type Mirror = (typeof Mirrors)[number]
 const Splitters = ['|', '-'] as const
 type Splitter = (typeof Splitters)[number]
+const VERTICAL_REDIRECTS: Direction[] = ['N', 'S']
+const HORIZONTAL_REDIRECTS: Direction[] = ['E', 'W']
 type Tile = Mirror | Splitter | '.'
 
 const BouncyTiles = new Set([...Mirrors, ...Splitters])
@@ -27,58 +29,25 @@ const toGrid = (lines: string[]) =>
 const coordToId = (coord: Coord) => [coord.x, coord.y].join('x')
 const beamToId = (beam: Beam) => [beam.direction, beam.x, beam.y].join('x')
 
-const handleHorizontalSplitter = (beam: Beam): Beam[] => {
-  if (['E', 'W'].includes(beam.direction)) {
-    return handleDot(beam)
+const handleSplitter = (beam: Beam, redirects: Direction[]) => {
+  if (redirects.includes(beam.direction)) {
+    return [beam]
   }
 
-  return [
-    {
-      x: beam.x + 1,
-      y: beam.y,
-      direction: 'E',
-    },
-    {
-      x: beam.x - 1,
-      y: beam.y,
-      direction: 'W',
-    },
-  ]
-}
-const handleVerticalSplitter = (beam: Beam): Beam[] => {
-  if (['N', 'S'].includes(beam.direction)) {
-    return handleDot(beam)
-  }
-
-  return [
-    {
-      x: beam.x,
-      y: beam.y - 1,
-      direction: 'N',
-    },
-    {
-      x: beam.x,
-      y: beam.y + 1,
-      direction: 'S',
-    },
-  ]
+  return redirects.map((d) => ({ ...beam, direction: d }))
 }
 const handleBackslash = (beam: Beam) => {
   switch (beam.direction) {
     case 'N':
-      beam.x--
       beam.direction = 'W'
       break
     case 'E':
-      beam.y++
       beam.direction = 'S'
       break
     case 'S':
-      beam.x++
       beam.direction = 'E'
       break
     case 'W':
-      beam.y--
       beam.direction = 'N'
       break
   }
@@ -87,25 +56,21 @@ const handleBackslash = (beam: Beam) => {
 const handleFwdslash = (beam: Beam) => {
   switch (beam.direction) {
     case 'N':
-      beam.x++
       beam.direction = 'E'
       break
     case 'E':
-      beam.y--
       beam.direction = 'N'
       break
     case 'S':
-      beam.x--
       beam.direction = 'W'
       break
     case 'W':
-      beam.y++
       beam.direction = 'S'
       break
   }
   return [beam]
 }
-const handleDot = (beam: Beam) => {
+const moveBeam = (beam: Beam) => {
   switch (beam.direction) {
     case 'N':
       beam.y--
@@ -120,20 +85,22 @@ const handleDot = (beam: Beam) => {
       beam.x--
       break
   }
-  return [beam]
+  return beam
 }
-const moveBeam = (beam: Beam, char: Tile): Beam[] => {
+const handleTiles = (beam: Beam, char: Tile): Beam[] => {
   switch (char) {
     case '-':
-      return handleHorizontalSplitter(beam)
+      return handleSplitter(beam, HORIZONTAL_REDIRECTS)
     case '|':
-      return handleVerticalSplitter(beam)
+      return handleSplitter(beam, VERTICAL_REDIRECTS)
     case '/':
       return handleFwdslash(beam)
     case '\\':
       return handleBackslash(beam)
     case '.':
-      return handleDot(beam)
+      return [beam]
+    default:
+      throw new Error(`unexpected tile:${char} @ beam:${JSON.stringify(beam)}`)
   }
 }
 
@@ -185,9 +152,10 @@ const solveGrid = (grid: Tile[][], startingBeam: Beam) => {
       energizedTiles.add(coordToId(beam))
 
       const currentTile = grid[beam.y][beam.x]
-      const moveResult = moveBeam(beam, currentTile)
+      const tileResults = handleTiles(beam, currentTile)
+      const moveResults = tileResults.map((b) => moveBeam(b))
 
-      nextBeams.push(...moveResult)
+      nextBeams.push(...moveResults)
     })
 
     beams = nextBeams
