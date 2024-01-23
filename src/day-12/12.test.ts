@@ -9,6 +9,8 @@ const parseFile = (fileName: string) =>
 
 type Char = '?' | '#' | '.'
 
+it.skip('skips day 12', () => {})
+
 describe('day 12.1', () => {
   describe('test 12.1', () => {
     const FILENAME = '12-test-data.txt'
